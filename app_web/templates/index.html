@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Fashion Recommender - Samsung Innovation Campus</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-container">
+            <div class="logo-area">
+                <span class="logo-badge">AI SIC CAPSTONE</span>
+                <h1 class="app-title">Hệ thống Gợi ý Phối đồ Thời trang Thông minh</h1>
+                <p class="app-subtitle">Ứng dụng Deep Learning (ResNet50) & Thuật toán Phối đồ Bù trừ Đa mục tiêu</p>
+            </div>
+            <div class="author-tag">
+                <div class="author-name">Đoàn Mạnh Dũng</div>
+                <div class="program-name">Samsung Innovation Campus</div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <!-- BẢNG ĐIỀU KHIỂN & CẤU HÌNH -->
+        <section class="control-card">
+            <h2 class="section-title">⚙️ Bảng Điều Khiển & Dữ Liệu Đầu Vào</h2>
+            
+            <div class="tabs-nav">
+                <button class="tab-btn active" id="tabSampleBtn" onclick="switchTab('sample')">📦 Chọn Sản phẩm Mẫu trong Kho (1,200 Items)</button>
+                <button class="tab-btn" id="tabUploadBtn" onclick="switchTab('upload')">📤 Tải lên Ảnh Trang phục Cá nhân</button>
+            </div>
+
+            <!-- TAB 1: CHỌN MẪU TỪ KHO -->
+            <div class="tab-content" id="tabSampleContent">
+                <div class="form-group">
+                    <label for="sampleSelect">Chọn sản phẩm mẫu kiểm thử:</label>
+                    <select id="sampleSelect" class="form-select" onchange="previewSampleItem()">
+                        <option value="">-- Đang tải danh sách mẫu... --</option>
+                    </select>
+                </div>
+                <div class="sample-chips" id="quickSampleChips">
+                    <!-- Quick chips will be rendered by JS -->
+                </div>
+            </div>
+
+            <!-- TAB 2: UPLOAD ẢNH -->
+            <div class="tab-content hidden" id="tabUploadContent">
+                <div class="upload-dropzone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                    <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="handleFileSelect(event)">
+                    <div class="dropzone-inner" id="dropzoneContent">
+                        <div class="upload-icon">📷</div>
+                        <div class="upload-text">Nhấp vào đây hoặc kéo thả ảnh trang phục của bạn vào</div>
+                        <div class="upload-hint">Định dạng JPG, PNG, WEBP (Khuyên dùng ảnh chụp trên nền sáng hoặc đơn sắc)</div>
+                    </div>
+                    <img id="uploadPreviewImg" class="upload-preview hidden" alt="Upload preview">
+                </div>
+            </div>
+
+            <!-- BỘ LỌC VÀ THAM SỐ -->
+            <div class="filters-grid">
+                <div class="form-group">
+                    <label for="filterGender">Giới tính mục tiêu:</label>
+                    <select id="filterGender" class="form-select">
+                        <option value="Tất cả">Tự động (Theo món gốc / Unisex)</option>
+                        <option value="Men">Nam (Men)</option>
+                        <option value="Women">Nữ (Women)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="filterUsage">Hoàn cảnh sử dụng:</label>
+                    <select id="filterUsage" class="form-select">
+                        <option value="Tất cả">Tự động nhận diện</option>
+                        <option value="Casual">Dạo phố / Hàng ngày (Casual)</option>
+                        <option value="Formal">Công sở / Trang trọng (Formal)</option>
+                        <option value="Sports">Thể thao / Năng động (Sports)</option>
+                        <option value="Ethnic">Truyền thống / Dự tiệc (Ethnic)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="filterModel">Mô hình trích xuất đặc trưng:</label>
+                    <select id="filterModel" class="form-select">
+                        <option value="resnet">⭐ Đề xuất: ResNet50 Deep Embeddings (2048D)</option>
+                        <option value="baseline">Baseline: HSV Color Histogram (512D)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="action-area">
+                <button class="btn-primary" id="btnRecommend" onclick="executeRecommendation()">
+                    <span id="btnIcon">✨</span> Gợi ý Phối đồ Bù trừ Thông minh
+                </button>
+            </div>
+        </section>
+
+        <!-- KHU VỰC KẾT QUẢ PHỐI ĐỒ -->
+        <section class="results-container hidden" id="resultsSection">
+            <div class="results-layout">
+                <!-- CỘT TRÁI: MÓN GỐC (QUERY ITEM) -->
+                <div class="query-card">
+                    <div class="card-badge">MÓN ĐỒ GỐC (INPUT)</div>
+                    <div class="item-img-wrapper">
+                        <img id="queryImg" src="" alt="Query Item" class="item-img">
+                    </div>
+                    <div class="item-info">
+                        <h3 id="queryName" class="item-title">Tên sản phẩm</h3>
+                        <div class="item-tags" id="queryTags">
+                            <!-- Tags injected by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CỘT PHẢI: BỘ OUTFIT BÙ TRỪ ĐƯỢC GỢI Ý -->
+                <div class="recommendations-card">
+                    <div class="rec-header">
+                        <h2 class="section-title">👔 Bộ Outfit Bù Trừ Hoàn Chỉnh (Complementary Match)</h2>
+                        <span class="model-badge" id="usedModelBadge">ResNet50 2048D</span>
+                    </div>
+
+                    <div class="outfit-grid" id="outfitGrid">
+                        <!-- Outfit items will be rendered by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TRẠNG THÁI LOADING -->
+        <div class="loading-overlay hidden" id="loadingOverlay">
+            <div class="spinner"></div>
+            <div class="loading-text">Đang trích xuất đặc trưng và tính toán độ tương đồng Cosine...</div>
+        </div>
+    </main>
+
+    <footer class="app-footer">
+        <p>© 2026 Samsung Innovation Campus (AI SIC) — Báo cáo Đồ án Tốt nghiệp — Học viên: Đoàn Mạnh Dũng</p>
+    </footer>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
